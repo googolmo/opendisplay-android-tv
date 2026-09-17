@@ -1,0 +1,834 @@
+package im.amomo.opendisplay
+
+import android.app.Activity
+import android.os.Bundle
+import android.view.Surface
+import android.view.SurfaceHolder
+import android.view.SurfaceView
+import android.view.WindowManager
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.tv.material3.*
+import im.amomo.opendisplay.server.ClientState
+import im.amomo.opendisplay.server.OpenDisplayServer
+import im.amomo.opendisplay.server.ResolutionMode
+import im.amomo.opendisplay.server.ServerState
+import im.amomo.opendisplay.ui.theme.OpenDisplayAndroidTvTheme
+import kotlinx.coroutines.delay
+import java.util.Locale
+
+class MainActivity : ComponentActivity() {
+
+    private lateinit var server: OpenDisplayServer
+
+    @OptIn(ExperimentalTvMaterial3Api::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        server = OpenDisplayServer(this)
+
+        setContent {
+            OpenDisplayAndroidTvTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RectangleShape
+                ) {
+                    ReceiverScreen(server = server)
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        server.stop()
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun ReceiverScreen(server: OpenDisplayServer) {
+    val serverState by server.serverState.collectAsState()
+    ReceiverScreen(
+        serverState = serverState,
+        onStartServer = { server.start() },
+        onStopServer = { server.stop() },
+        onSetSurface = { server.setSurface(it) },
+        onSetResolutionMode = { server.setResolutionMode(it) }
+    )
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun ReceiverScreen(
+    serverState: ServerState,
+    onStartServer: () -> Unit = {},
+    onStopServer: () -> Unit = {},
+    onSetSurface: (Surface?) -> Unit = {},
+    onSetResolutionMode: (ResolutionMode) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val isConnected = serverState.connectedClient != null
+    var isFullScreen by remember { mutableStateOf(false) }
+
+    // Keep screen on while server is listening or client is connected
+    DisposableEffect(serverState.isListening) {
+        val activity = context as? Activity
+        val window = activity?.window
+        if (serverState.isListening && window != null) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            if (window != null) {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+    }
+
+    // Automatically trigger full screen mode whenever a connection is created
+    LaunchedEffect(isConnected) {
+        isFullScreen = isConnected
+    }
+
+    if (isFullScreen && isConnected) {
+        BackHandler {
+            isFullScreen = false
+        }
+
+        FullScreenVideoView(
+            serverState = serverState,
+            onSetSurface = onSetSurface,
+            onExitFullScreen = { isFullScreen = false }
+        )
+    } else {
+        DashboardScreen(
+            serverState = serverState,
+            onStartServer = onStartServer,
+            onStopServer = onStopServer,
+            onSetSurface = onSetSurface,
+            onSetResolutionMode = onSetResolutionMode,
+            onEnterFullScreen = { isFullScreen = true }
+        )
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun FullScreenVideoView(
+    serverState: ServerState,
+    onSetSurface: (Surface?) -> Unit,
+    onExitFullScreen: () -> Unit
+) {
+    val context = LocalContext.current
+    var showHud by remember { mutableStateOf(true) }
+
+    // Auto-hide HUD overlay after 4 seconds
+    LaunchedEffect(showHud) {
+        if (showHud) {
+            delay(4000L)
+            showHud = false
+        }
+    }
+
+    // Toggle immersive full screen mode (hide status and navigation bars)
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        val window = activity?.window
+        if (window != null) {
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            insetsController.hide(WindowInsetsCompat.Type.systemBars())
+            insetsController.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+        onDispose {
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .clickable { showHud = !showHud },
+        contentAlignment = Alignment.Center
+    ) {
+        // Video Surface View filling the entire screen
+        AndroidView(
+            factory = { ctx ->
+                SurfaceView(ctx).apply {
+                    holder.addCallback(object : SurfaceHolder.Callback {
+                        override fun surfaceCreated(holder: SurfaceHolder) {
+                            onSetSurface(holder.surface)
+                        }
+
+                        override fun surfaceChanged(
+                            holder: SurfaceHolder,
+                            format: Int,
+                            width: Int,
+                            height: Int
+                        ) {}
+
+                        override fun surfaceDestroyed(holder: SurfaceHolder) {
+                            onSetSurface(null)
+                        }
+                    })
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Mouse Cursor Overlay
+        CursorOverlay(
+            clientState = serverState.connectedClient,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Overlay / HUD Controls
+        AnimatedVisibility(
+            visible = showHud,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .padding(24.dp)
+            ) {
+                // Top HUD Bar: Connection Info & Exit Fullscreen
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .background(
+                            Color.Black.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val client = serverState.connectedClient
+                    Column {
+                        Text(
+                            text = "Connected: ${client?.clientAddress ?: "Client"}",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        client?.let {
+                            Text(
+                                text = String.format(
+                                    Locale.US,
+                                    "Resolution: %dx%d | FPS: %.1f | Bandwidth: %.2f Mbps | Latency: %s",
+                                    serverState.currentResolution.first,
+                                    serverState.currentResolution.second,
+                                    it.fps,
+                                    it.mbps,
+                                    it.rttMs?.let { rtt -> "$rtt ms" } ?: "Measuring..."
+                                ),
+                                color = Color.LightGray,
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = onExitFullScreen,
+                        colors = ButtonDefaults.colors(
+                            containerColor = Color.White.copy(alpha = 0.2f),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(text = "Exit Full Screen", fontSize = 14.sp)
+                    }
+                }
+
+                // Bottom Hint
+                Text(
+                    text = "Press BACK or tap screen to toggle overlay",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Color.Black.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun DashboardScreen(
+    serverState: ServerState,
+    onStartServer: () -> Unit = {},
+    onStopServer: () -> Unit = {},
+    onSetSurface: (Surface?) -> Unit = {},
+    onSetResolutionMode: (ResolutionMode) -> Unit = {},
+    onEnterFullScreen: () -> Unit = {}
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // App Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "OpenDisplay Receiver",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Protocol Version 3 (pv=3)",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
+
+            // Start / Stop Button
+            Button(
+                onClick = {
+                    if (serverState.isListening) {
+                        onStopServer()
+                    } else {
+                        onStartServer()
+                    }
+                },
+                colors = ButtonDefaults.colors(
+                    containerColor = if (serverState.isListening) Color(0xFFD32F2F) else Color(0xFF2E7D32),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = if (serverState.isListening) "STOP SERVER" else "START SERVER",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+        }
+
+        // Status Banner
+        StatusBanner(state = serverState)
+
+        // Resolution Selector Card
+        ResolutionSelectorCard(
+            currentMode = serverState.resolutionMode,
+            currentResolution = serverState.currentResolution,
+            onSetResolutionMode = onSetResolutionMode
+        )
+
+        // Main Content Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Server Info Card
+            Column(modifier = Modifier.weight(1f)) {
+                ServerInfoCard(state = serverState)
+            }
+
+            // Client Info Card
+            Column(modifier = Modifier.weight(1f)) {
+                ClientInfoCard(clientState = serverState.connectedClient)
+            }
+        }
+
+        // Video Surface Display Section
+        VideoSurfaceCard(
+            isListening = serverState.isListening,
+            clientState = serverState.connectedClient,
+            onSetSurface = onSetSurface,
+            onEnterFullScreen = onEnterFullScreen
+        )
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun ResolutionSelectorCard(
+    currentMode: ResolutionMode,
+    currentResolution: Pair<Int, Int>,
+    onSetResolutionMode: (ResolutionMode) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Display Resolution Mode",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Target: ${currentResolution.first} x ${currentResolution.second}",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ResolutionMode.entries.forEach { mode ->
+                    val isSelected = currentMode == mode
+                    Button(
+                        onClick = { onSetResolutionMode(mode) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.colors(
+                            containerColor = if (isSelected) Color(0xFF1565C0) else Color.White.copy(alpha = 0.15f),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = mode.displayName,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatusBanner(state: ServerState) {
+    val (bgColor, statusText) = when {
+        state.connectedClient != null -> Color(0xFF1565C0) to "CONNECTED: ${state.connectedClient.clientAddress}"
+        state.isListening -> Color(0xFF2E7D32) to "LISTENING ON PORT ${state.port}"
+        else -> Color(0xFF424242) to "SERVER STOPPED"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor, shape = RoundedCornerShape(8.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(Color.White, shape = RoundedCornerShape(6.dp))
+            )
+            Text(
+                text = statusText,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun ServerInfoCard(state: ServerState) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Server Details",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            InfoRow("Status", if (state.isListening) "Running" else "Stopped")
+            InfoRow("Target Resolution", "${state.currentResolution.first}x${state.currentResolution.second}")
+            InfoRow("Resolution Mode", state.resolutionMode.displayName)
+            InfoRow("Listening Port", "TCP ${state.port}")
+            InfoRow("UDP Cursor Port", if (state.cursorPort != null) "UDP ${state.cursorPort}" else "Disabled")
+            InfoRow(
+                "Local IP(s)",
+                if (state.localIpAddresses.isNotEmpty()) state.localIpAddresses.joinToString(", ") else "None / Offline"
+            )
+            InfoRow("Device Name", state.deviceName)
+            InfoRow("mDNS Service", "_opensidecar._tcp")
+            InfoRow("mDNS Registered", if (state.mDnsRegistered) "Yes" else "No")
+            InfoRow("Device ID (UUID)", state.deviceId)
+
+            state.lastError?.let { err ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Error: $err",
+                    color = Color.Red,
+                    fontSize = 12.sp
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun ClientInfoCard(clientState: ClientState?) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Client Session",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (clientState != null) {
+                InfoRow("Client Address", clientState.clientAddress)
+                InfoRow("Sender PV", "${clientState.senderPv ?: "Unknown"}")
+                InfoRow("Sender Min PV", "${clientState.senderMinPv ?: "Unknown"}")
+                InfoRow("RTT Latency", clientState.rttMs?.let { "$it ms" } ?: "Measuring...")
+                InfoRow("Clock Offset", clientState.clockOffsetMs?.let { "$it ms" } ?: "Measuring...")
+                InfoRow("Video Frames", "${clientState.videoFramesReceived}")
+                InfoRow("Control Messages", "${clientState.controlMessagesReceived}")
+                InfoRow("FPS", String.format(Locale.US, "%.1f", clientState.fps))
+                InfoRow("Bandwidth", String.format(Locale.US, "%.2f Mbps", clientState.mbps))
+                InfoRow("Cursor Channel", if (clientState.udpCursorActive) "UDP (Side Channel)" else "TCP")
+                InfoRow("Cursor Visible", if (clientState.cursorVisible) "Yes" else "No")
+                InfoRow(
+                    "Cursor Position",
+                    clientState.lastCursorPos?.let {
+                        String.format(Locale.US, "(%.3f, %.3f)", it.first, it.second)
+                    } ?: "Hidden"
+                )
+                InfoRow("Last Message", clientState.lastMessageType ?: "None")
+            } else {
+                Text(
+                    text = "No active connection.",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "Connect an OpenDisplay sender from macOS or another client over WiFi or USB.",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun VideoSurfaceCard(
+    isListening: Boolean,
+    clientState: ClientState?,
+    onSetSurface: (Surface?) -> Unit = {},
+    onEnterFullScreen: () -> Unit = {}
+) {
+    val isConnected = clientState != null
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(280.dp),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isListening) {
+                AndroidView(
+                    factory = { ctx ->
+                        SurfaceView(ctx).apply {
+                            holder.addCallback(object : SurfaceHolder.Callback {
+                                override fun surfaceCreated(holder: SurfaceHolder) {
+                                    onSetSurface(holder.surface)
+                                }
+
+                                override fun surfaceChanged(
+                                    holder: SurfaceHolder,
+                                    format: Int,
+                                    width: Int,
+                                    height: Int
+                                ) {}
+
+                                override fun surfaceDestroyed(holder: SurfaceHolder) {
+                                    onSetSurface(null)
+                                }
+                            })
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                if (isConnected) {
+                    CursorOverlay(
+                        clientState = clientState,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                if (!isConnected) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.7f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Waiting for OpenDisplay sender stream...",
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
+                        Button(
+                            onClick = onEnterFullScreen,
+                            colors = ButtonDefaults.colors(
+                                containerColor = Color.Black.copy(alpha = 0.6f),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("FULL SCREEN", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.DarkGray.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Server stopped. Click 'START SERVER' to listen.",
+                        color = Color.LightGray,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CursorOverlay(
+    clientState: ClientState?,
+    modifier: Modifier = Modifier
+) {
+    if (clientState == null || !clientState.cursorVisible || clientState.lastCursorPos == null) {
+        return
+    }
+
+    val (normX, normY) = clientState.lastCursorPos
+    val cursorBitmap = clientState.cursorBitmap
+    val imageBitmap = remember(cursorBitmap) { cursorBitmap?.asImageBitmap() }
+
+    BoxWithConstraints(modifier = modifier) {
+        val density = LocalDensity.current
+        val containerWidthPx = with(density) { maxWidth.toPx() }
+        val containerHeightPx = with(density) { maxHeight.toPx() }
+
+        if (containerWidthPx > 0f && containerHeightPx > 0f) {
+            val targetX = normX * containerWidthPx
+            val targetY = normY * containerHeightPx
+
+            if (imageBitmap != null) {
+                val spriteWidthPx = if (clientState.cursorNormWidth != null && clientState.cursorNormWidth > 0f) {
+                    clientState.cursorNormWidth * containerWidthPx
+                } else {
+                    imageBitmap.width.toFloat()
+                }
+
+                val spriteHeightPx = if (clientState.cursorNormHeight != null && clientState.cursorNormHeight > 0f) {
+                    clientState.cursorNormHeight * containerHeightPx
+                } else {
+                    imageBitmap.height.toFloat()
+                }
+
+                val hotspotX = spriteWidthPx * clientState.cursorHotspotX
+                val hotspotY = spriteHeightPx * clientState.cursorHotspotY
+
+                val leftPx = targetX - hotspotX
+                val topPx = targetY - hotspotY
+
+                val leftDp = with(density) { leftPx.toDp() }
+                val topDp = with(density) { topPx.toDp() }
+                val widthDp = with(density) { spriteWidthPx.toDp() }
+                val heightDp = with(density) { spriteHeightPx.toDp() }
+
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .offset(x = leftDp, y = topDp)
+                        .size(width = widthDp, height = heightDp)
+                )
+            } else {
+                DefaultCursorPointer(
+                    targetX = targetX,
+                    targetY = targetY
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DefaultCursorPointer(
+    targetX: Float,
+    targetY: Float,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val scale = density
+        val pX = targetX
+        val pY = targetY
+
+        val path = Path().apply {
+            moveTo(pX, pY)
+            lineTo(pX, pY + 20f * scale)
+            lineTo(pX + 5f * scale, pY + 15f * scale)
+            lineTo(pX + 10f * scale, pY + 20f * scale)
+            lineTo(pX + 12.5f * scale, pY + 17.5f * scale)
+            lineTo(pX + 7.5f * scale, pY + 12.5f * scale)
+            lineTo(pX + 14f * scale, pY + 12.5f * scale)
+            close()
+        }
+
+        drawPath(
+            path = path,
+            color = Color.Black,
+            style = Stroke(width = 2.5f * scale)
+        )
+        drawPath(
+            path = path,
+            color = Color.White,
+            style = Fill
+        )
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            color = Color.Gray
+        )
+        Text(
+            text = value,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = FontFamily.Monospace
+        )
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Preview(device = "id:tv_1080p", showBackground = true)
+@Composable
+fun ReceiverScreenPreview() {
+    OpenDisplayAndroidTvTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            shape = RectangleShape
+        ) {
+            ReceiverScreen(
+                serverState = ServerState(
+                    isListening = true,
+                    port = 9000,
+                    localIpAddresses = listOf("192.168.1.100"),
+                    deviceId = "550e8400-e29b-41d4-a716-446655440000",
+                    deviceName = "OpenDisplay-TV",
+                    mDnsRegistered = true,
+                    connectedClient = ClientState(
+                        clientAddress = "192.168.1.105:54321",
+                        senderPv = 3,
+                        senderMinPv = 3,
+                        rttMs = 12,
+                        clockOffsetMs = -2,
+                        videoFramesReceived = 1240,
+                        controlMessagesReceived = 45,
+                        fps = 60.0f,
+                        mbps = 15.4f,
+                        lastMessageType = "VIDEO"
+                    )
+                )
+            )
+        }
+    }
+}
