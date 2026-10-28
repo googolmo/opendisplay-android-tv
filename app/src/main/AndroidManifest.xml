@@ -24,6 +24,7 @@
         android:theme="@style/Theme.OpenDisplayAndroidTv">
         <activity
             android:name=".MainActivity"
+            android:configChanges="locale|layoutDirection|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|keyboard|keyboardHidden|fontScale"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

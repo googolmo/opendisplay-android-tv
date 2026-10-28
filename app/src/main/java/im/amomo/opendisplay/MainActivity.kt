@@ -24,6 +24,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
@@ -39,6 +41,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -364,11 +368,17 @@ fun DashboardScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(
-                        text = stringResource(R.string.app_header_title),
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.app_header_title),
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        ServerStatusBadge(state = serverState)
+                    }
                     Text(
                         text = stringResource(R.string.protocol_version, 3, 3),
                         fontSize = 14.sp,
@@ -419,9 +429,6 @@ fun DashboardScreen(
                     }
                 }
             }
-
-            // Status Banner
-            StatusBanner(state = serverState)
 
             // Resolution Selector Card
             ResolutionSelectorCard(
@@ -481,92 +488,109 @@ fun LanguageSelectionDialog(
 ) {
     val currentLocales = AppCompatDelegate.getApplicationLocales()
     val activeTags = if (currentLocales.isEmpty) "" else currentLocales.toLanguageTags()
+    val focusRequester = remember { FocusRequester() }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f))
-            .clickable(onClick = onDismissRequest),
-        contentAlignment = Alignment.Center
+    val selectedIndex = remember(activeTags) {
+        SupportedLanguages.indexOfFirst { lang ->
+            when {
+                lang.code.isEmpty() -> activeTags.isEmpty()
+                lang.code.equals("zh-TW", ignoreCase = true) ->
+                    activeTags.contains("zh-TW", ignoreCase = true) ||
+                            activeTags.contains("zh-Hant", ignoreCase = true) ||
+                            activeTags.contains("zh-HK", ignoreCase = true)
+
+                lang.code.equals("zh-CN", ignoreCase = true) ->
+                    (activeTags.startsWith("zh", ignoreCase = true) &&
+                            !activeTags.contains("TW", ignoreCase = true) &&
+                            !activeTags.contains("Hant", ignoreCase = true) &&
+                            !activeTags.contains("HK", ignoreCase = true))
+
+                else -> activeTags.startsWith(lang.code, ignoreCase = true)
+            }
+        }.let { if (it >= 0) it else 0 }
+    }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(
+        Box(
             modifier = Modifier
-                .width(440.dp)
-                .heightIn(max = 560.dp)
-                .clickable(enabled = false) {},
-            shape = RoundedCornerShape(12.dp)
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.75f))
+                .clickable(onClick = onDismissRequest),
+            contentAlignment = Alignment.Center
         ) {
-            Column(
+            Surface(
                 modifier = Modifier
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .width(440.dp)
+                    .heightIn(max = 560.dp)
+                    .clickable(enabled = false) {},
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.language_dialog_title),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.language_dialog_title),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
 
-                SupportedLanguages.forEach { lang ->
-                    val isSelected = when {
-                        lang.code.isEmpty() -> activeTags.isEmpty()
-                        lang.code.equals("zh-TW", ignoreCase = true) ->
-                            activeTags.contains("zh-TW", ignoreCase = true) ||
-                                    activeTags.contains("zh-Hant", ignoreCase = true) ||
-                                    activeTags.contains("zh-HK", ignoreCase = true)
+                    SupportedLanguages.forEachIndexed { index, lang ->
+                        val isSelected = index == selectedIndex
+                        val title = if (lang.displayNameRes != null) {
+                            stringResource(lang.displayNameRes)
+                        } else {
+                            lang.nativeName
+                        }
 
-                        lang.code.equals("zh-CN", ignoreCase = true) ->
-                            (activeTags.startsWith("zh", ignoreCase = true) &&
-                                    !activeTags.contains("TW", ignoreCase = true) &&
-                                    !activeTags.contains("Hant", ignoreCase = true) &&
-                                    !activeTags.contains("HK", ignoreCase = true))
-
-                        else -> activeTags.startsWith(lang.code, ignoreCase = true)
-                    }
-
-                    val title = if (lang.displayNameRes != null) {
-                        stringResource(lang.displayNameRes)
-                    } else {
-                        lang.nativeName
-                    }
-
-                    Button(
-                        onClick = { onLanguageSelected(lang.code) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.colors(
-                            containerColor = if (isSelected) Color(0xFF1565C0) else Color.White.copy(alpha = 0.12f),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = title,
-                                fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        Button(
+                            onClick = { onLanguageSelected(lang.code) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(if (isSelected) Modifier.focusRequester(focusRequester) else Modifier),
+                            colors = ButtonDefaults.colors(
+                                containerColor = if (isSelected) Color(0xFF1565C0) else Color.White.copy(alpha = 0.12f),
+                                contentColor = Color.White
                             )
-                            if (isSelected) {
-                                Text(text = "✓", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = title,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                                if (isSelected) {
+                                    Text(text = "✓", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                Button(
-                    onClick = onDismissRequest,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.colors(
-                        containerColor = Color.White.copy(alpha = 0.08f),
-                        contentColor = Color.LightGray
-                    )
-                ) {
-                    Text(text = stringResource(R.string.dialog_close), fontSize = 14.sp)
+                    Button(
+                        onClick = onDismissRequest,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.colors(
+                            containerColor = Color.White.copy(alpha = 0.08f),
+                            contentColor = Color.LightGray
+                        )
+                    ) {
+                        Text(text = stringResource(R.string.dialog_close), fontSize = 14.sp)
+                    }
                 }
             }
         }
@@ -636,8 +660,9 @@ fun ResolutionSelectorCard(
     }
 }
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun StatusBanner(state: ServerState) {
+fun ServerStatusBadge(state: ServerState) {
     val bgColor = when {
         state.connectedClient != null -> Color(0xFF1565C0)
         state.isListening -> Color(0xFF2E7D32)
@@ -651,24 +676,23 @@ fun StatusBanner(state: ServerState) {
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .background(bgColor, shape = RoundedCornerShape(8.dp))
-            .padding(16.dp)
+            .background(bgColor, shape = RoundedCornerShape(16.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(12.dp)
-                    .background(Color.White, shape = RoundedCornerShape(6.dp))
+                    .size(8.dp)
+                    .background(Color.White, shape = RoundedCornerShape(4.dp))
             )
             Text(
                 text = statusText,
                 color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp
             )
         }
     }

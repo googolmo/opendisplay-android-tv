@@ -22,6 +22,7 @@ The feature graphic is original promotional artwork generated for this listing. 
 
 ## Submission checklist
 
+- Publish [the privacy policy draft](PRIVACY_POLICY.md) as a publicly accessible, non-editable webpage after replacing its developer name and contact placeholders; add the URL in Play Console and make the policy available in the app.
 - Capture and review a real 16:9 Android TV screenshot from the release build.
 - Confirm the Android TV banner and store icon exports meet the current Play Console size and format checks.
 - Complete the app access, Data safety, content rating, target audience, ads, and privacy policy declarations in Play Console based on the final release behavior.
