@@ -161,6 +161,14 @@ class OpenDisplayProtocolTest {
     }
 
     @Test
+    fun testResolutionModeTitleResIdMapping() {
+        for (mode in ResolutionMode.entries) {
+            val titleResId = mode.getTitleResId()
+            assertTrue("Resource ID for mode $mode should be non-zero", titleResId != 0)
+        }
+    }
+
+    @Test
     fun testCursorControlMessageParsing() {
         val cursorJsonStr = "{\"type\":\"cursor\",\"v\":1,\"x\":0.525,\"y\":0.312}"
         val json = JSONObject(cursorJsonStr)
@@ -173,7 +181,8 @@ class OpenDisplayProtocolTest {
 
     @Test
     fun testCursorImgControlMessageParsing() {
-        val cursorImgJsonStr = "{\"type\":\"cursorImg\",\"nw\":0.02,\"nh\":0.035,\"ax\":0.1,\"ay\":0.1,\"png\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\"}"
+        val cursorImgJsonStr =
+            "{\"type\":\"cursorImg\",\"nw\":0.02,\"nh\":0.035,\"ax\":0.1,\"ay\":0.1,\"png\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\"}"
         val json = JSONObject(cursorImgJsonStr)
 
         assertEquals("cursorImg", json.getString("type"))
@@ -227,5 +236,35 @@ class OpenDisplayProtocolTest {
 
         assertEquals("hello", helloJson.getString("type"))
         assertEquals(9001, helloJson.getInt("cursorPort"))
+    }
+
+    @Test
+    fun testPongRoundTripAndClockOffsetCalculation() {
+        val t1 = 1700000000000L
+        val t2 = 1700000000030L
+        val mt = 1700000000010L
+
+        val rtt = (t2 - t1).coerceAtLeast(0)
+        assertEquals(30L, rtt)
+
+        val offset = mt - (t1 + rtt / 2)
+        assertEquals(-5L, offset)
+    }
+
+    @Test
+    fun testStatsMessageJsonPayload() {
+        val statsJson = JSONObject().apply {
+            put("type", "stats")
+            put("transport", "WiFi")
+            put("fps", 59.94)
+            put("mbps", 18.5)
+            put("rtt", 14L)
+        }
+
+        assertEquals("stats", statsJson.getString("type"))
+        assertEquals("WiFi", statsJson.getString("transport"))
+        assertEquals(59.94, statsJson.getDouble("fps"), 0.001)
+        assertEquals(18.5, statsJson.getDouble("mbps"), 0.001)
+        assertEquals(14L, statsJson.getLong("rtt"))
     }
 }

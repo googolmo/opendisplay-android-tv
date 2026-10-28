@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenDisplay</string>
+    <string name="app_header_title">Receptor OpenDisplay</string>
+    <string name="protocol_version">Versão do protocolo %1$d (pv=%2$d)</string>
+
+    <string name="start_server">INICIAR SERVIDOR</string>
+    <string name="stop_server">PARAR SERVIDOR</string>
+
+    <string name="status_connected">CONECTADO: %1$s</string>
+    <string name="status_listening">ESCUTANDO NA PORTA %1$d</string>
+    <string name="status_stopped">SERVIDOR PARADO</string>
+
+    <string name="display_resolution_mode">Modo de resolução da tela</string>
+    <string name="target_resolution_format">Alvo: %1$d x %2$d</string>
+    <string name="resolution_mode_auto">Automático (Nativo/Máx)</string>
+    <string name="resolution_mode_fhd">1080p (1920x1080)</string>
+    <string name="resolution_mode_qhd">1440p (2560x1440)</string>
+    <string name="resolution_mode_uhd_4k">4K UHD (3840x2160)</string>
+
+    <string name="server_details">Detalhes do servidor</string>
+    <string name="label_status">Status</string>
+    <string name="status_running">Em execução</string>
+    <string name="status_stopped_text">Parado</string>
+    <string name="label_target_resolution">Resolução alvo</string>
+    <string name="label_resolution_mode">Modo de resolução</string>
+    <string name="label_listening_port">Porta de escuta</string>
+    <string name="port_format_tcp">TCP %1$d</string>
+    <string name="label_udp_cursor_port">Porta UDP do cursor</string>
+    <string name="port_format_udp">UDP %1$d</string>
+    <string name="udp_port_disabled">Desativado</string>
+    <string name="label_local_ips">IP(s) local(is)</string>
+    <string name="ip_offline">Nenhuma / Offline</string>
+    <string name="label_device_name">Nome do dispositivo</string>
+    <string name="label_mdns_service">Serviço mDNS</string>
+    <string name="label_mdns_registered">mDNS registrado</string>
+    <string name="common_yes">Sim</string>
+    <string name="common_no">Não</string>
+    <string name="label_device_id">ID do dispositivo (UUID)</string>
+    <string name="error_prefix">Erro: %1$s</string>
+
+    <string name="client_session">Sessão do cliente</string>
+    <string name="label_client_address">Endereço do cliente</string>
+    <string name="label_sender_pv">PV do remetente</string>
+    <string name="label_sender_min_pv">PV mín. do remetente</string>
+    <string name="common_unknown">Desconhecido</string>
+    <string name="label_rtt_latency">Latência RTT</string>
+    <string name="label_clock_offset">Deslocamento de relógio</string>
+    <string name="latency_measuring">Medindo…</string>
+    <string name="latency_ms_format">%1$d ms</string>
+    <string name="label_video_frames">Quadros de vídeo</string>
+    <string name="label_control_messages">Mensagens de controle</string>
+    <string name="label_fps">FPS</string>
+    <string name="label_bandwidth">Largura de banda</string>
+    <string name="bandwidth_mbps_format">%.2f Mbps</string>
+    <string name="label_cursor_channel">Canal do cursor</string>
+    <string name="cursor_channel_udp">UDP (Canal lateral)</string>
+    <string name="cursor_channel_tcp">TCP</string>
+    <string name="label_cursor_visible">Cursor visível</string>
+    <string name="label_cursor_position">Posição do cursor</string>
+    <string name="cursor_hidden">Oculto</string>
+    <string name="cursor_pos_format">(%1$.3f, %2$.3f)</string>
+    <string name="label_last_message">Última mensagem</string>
+    <string name="common_none">Nenhum</string>
+    <string name="no_active_connection">Nenhuma conexão ativa.</string>
+    <string name="connect_instruction">Conecte um remetente OpenDisplay do macOS ou outro cliente via Wi-Fi ou USB.</string>
+
+    <string name="waiting_for_stream">Aguardando transmissão do remetente OpenDisplay…</string>
+    <string name="server_stopped_hint">Servidor parado. Clique em \"INICIAR SERVIDOR\" para escutar.</string>
+    <string name="btn_full_screen">TELA CHEIA</string>
+
+    <string name="hud_connected">Conectado: %1$s</string>
+    <string name="default_client_name">Cliente</string>
+    <string name="hud_stats_format">Resolução: %1$dx%2$d | FPS: %3$.1f | Largura de banda: %4$.2f Mbps | Latência: %5$s</string>
+    <string name="btn_exit_full_screen">Sair da tela cheia</string>
+    <string name="hud_hint">Pressione VOLTAR ou toque na tela para alternar a sobreposição</string>
+
+    <string name="btn_language">Idioma</string>
+    <string name="language_dialog_title">Selecionar idioma</string>
+    <string name="language_system_default">Padrão do sistema</string>
+    <string name="dialog_close">Fechar</string>
+</resources>

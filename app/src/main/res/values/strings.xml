@@ -1,3 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OpenDisplay</string>
+    <string name="app_header_title">OpenDisplay Receiver</string>
+    <string name="protocol_version">Protocol Version %1$d (pv=%2$d)</string>
+
+    <string name="start_server">START SERVER</string>
+    <string name="stop_server">STOP SERVER</string>
+
+    <string name="status_connected">CONNECTED: %1$s</string>
+    <string name="status_listening">LISTENING ON PORT %1$d</string>
+    <string name="status_stopped">SERVER STOPPED</string>
+
+    <string name="display_resolution_mode">Display Resolution Mode</string>
+    <string name="target_resolution_format">Target: %1$d x %2$d</string>
+    <string name="resolution_mode_auto">Auto (Native/Max)</string>
+    <string name="resolution_mode_fhd">1080p (1920x1080)</string>
+    <string name="resolution_mode_qhd">1440p (2560x1440)</string>
+    <string name="resolution_mode_uhd_4k">4K UHD (3840x2160)</string>
+
+    <string name="server_details">Server Details</string>
+    <string name="label_status">Status</string>
+    <string name="status_running">Running</string>
+    <string name="status_stopped_text">Stopped</string>
+    <string name="label_target_resolution">Target Resolution</string>
+    <string name="label_resolution_mode">Resolution Mode</string>
+    <string name="label_listening_port">Listening Port</string>
+    <string name="port_format_tcp">TCP %1$d</string>
+    <string name="label_udp_cursor_port">UDP Cursor Port</string>
+    <string name="port_format_udp">UDP %1$d</string>
+    <string name="udp_port_disabled">Disabled</string>
+    <string name="label_local_ips">Local IP(s)</string>
+    <string name="ip_offline">None / Offline</string>
+    <string name="label_device_name">Device Name</string>
+    <string name="label_mdns_service">mDNS Service</string>
+    <string name="label_mdns_registered">mDNS Registered</string>
+    <string name="common_yes">Yes</string>
+    <string name="common_no">No</string>
+    <string name="label_device_id">Device ID (UUID)</string>
+    <string name="error_prefix">Error: %1$s</string>
+
+    <string name="client_session">Client Session</string>
+    <string name="label_client_address">Client Address</string>
+    <string name="label_sender_pv">Sender PV</string>
+    <string name="label_sender_min_pv">Sender Min PV</string>
+    <string name="common_unknown">Unknown</string>
+    <string name="label_rtt_latency">RTT Latency</string>
+    <string name="label_clock_offset">Clock Offset</string>
+    <string name="latency_measuring">Measuring…</string>
+    <string name="latency_ms_format">%1$d ms</string>
+    <string name="label_video_frames">Video Frames</string>
+    <string name="label_control_messages">Control Messages</string>
+    <string name="label_fps">FPS</string>
+    <string name="label_bandwidth">Bandwidth</string>
+    <string name="bandwidth_mbps_format">%.2f Mbps</string>
+    <string name="label_cursor_channel">Cursor Channel</string>
+    <string name="cursor_channel_udp">UDP (Side Channel)</string>
+    <string name="cursor_channel_tcp">TCP</string>
+    <string name="label_cursor_visible">Cursor Visible</string>
+    <string name="label_cursor_position">Cursor Position</string>
+    <string name="cursor_hidden">Hidden</string>
+    <string name="cursor_pos_format">(%1$.3f, %2$.3f)</string>
+    <string name="label_last_message">Last Message</string>
+    <string name="common_none">None</string>
+    <string name="no_active_connection">No active connection.</string>
+    <string name="connect_instruction">Connect an OpenDisplay sender from macOS or another client over WiFi or USB.</string>
+
+    <string name="waiting_for_stream">Waiting for OpenDisplay sender stream…</string>
+    <string name="server_stopped_hint">Server stopped. Click \'START SERVER\' to listen.</string>
+    <string name="btn_full_screen">FULL SCREEN</string>
+
+    <string name="hud_connected">Connected: %1$s</string>
+    <string name="default_client_name">Client</string>
+    <string name="hud_stats_format">Resolution: %1$dx%2$d | FPS: %3$.1f | Bandwidth: %4$.2f Mbps | Latency: %5$s</string>
+    <string name="btn_exit_full_screen">Exit Full Screen</string>
+    <string name="hud_hint">Press BACK or tap screen to toggle overlay</string>
+
+    <string name="btn_language">Language</string>
+    <string name="language_dialog_title">Select Language</string>
+    <string name="language_system_default">System Default</string>
+    <string name="dialog_close">Close</string>
 </resources>

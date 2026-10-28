@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenDisplay</string>
+    <string name="app_header_title">OpenDisplay 接收端</string>
+    <string name="protocol_version">通訊協定版本 %1$d (pv=%2$d)</string>
+
+    <string name="start_server">啟動服務</string>
+    <string name="stop_server">停止服務</string>
+
+    <string name="status_connected">已連線：%1$s</string>
+    <string name="status_listening">接聽連接埠 %1$d</string>
+    <string name="status_stopped">服務已停止</string>
+
+    <string name="display_resolution_mode">顯示解析度模式</string>
+    <string name="target_resolution_format">目標：%1$d x %2$d</string>
+    <string name="resolution_mode_auto">自動 (原生/最大)</string>
+    <string name="resolution_mode_fhd">1080p (1920x1080)</string>
+    <string name="resolution_mode_qhd">1440p (2560x1440)</string>
+    <string name="resolution_mode_uhd_4k">4K UHD (3840x2160)</string>
+
+    <string name="server_details">伺服器詳細資訊</string>
+    <string name="label_status">狀態</string>
+    <string name="status_running">執行中</string>
+    <string name="status_stopped_text">已停止</string>
+    <string name="label_target_resolution">目標解析度</string>
+    <string name="label_resolution_mode">解析度模式</string>
+    <string name="label_listening_port">接聽連接埠</string>
+    <string name="port_format_tcp">TCP %1$d</string>
+    <string name="label_udp_cursor_port">UDP 游標連接埠</string>
+    <string name="port_format_udp">UDP %1$d</string>
+    <string name="udp_port_disabled">已停用</string>
+    <string name="label_local_ips">區域 IP 位址</string>
+    <string name="ip_offline">無 / 離線</string>
+    <string name="label_device_name">裝置名稱</string>
+    <string name="label_mdns_service">mDNS 服務</string>
+    <string name="label_mdns_registered">mDNS 已註冊</string>
+    <string name="common_yes">是</string>
+    <string name="common_no">否</string>
+    <string name="label_device_id">裝置 ID (UUID)</string>
+    <string name="error_prefix">錯誤：%1$s</string>
+
+    <string name="client_session">用戶端工作階段</string>
+    <string name="label_client_address">用戶端位址</string>
+    <string name="label_sender_pv">發送端通訊協定版本</string>
+    <string name="label_sender_min_pv">發送端最低通訊協定版本</string>
+    <string name="common_unknown">未知</string>
+    <string name="label_rtt_latency">來回延遲 (RTT)</string>
+    <string name="label_clock_offset">時鐘偏差</string>
+    <string name="latency_measuring">測量中…</string>
+    <string name="latency_ms_format">%1$d ms</string>
+    <string name="label_video_frames">視訊幀數</string>
+    <string name="label_control_messages">控制訊息數</string>
+    <string name="label_fps">FPS</string>
+    <string name="label_bandwidth">頻寬</string>
+    <string name="bandwidth_mbps_format">%.2f Mbps</string>
+    <string name="label_cursor_channel">游標通道</string>
+    <string name="cursor_channel_udp">UDP (旁路通道)</string>
+    <string name="cursor_channel_tcp">TCP</string>
+    <string name="label_cursor_visible">游標可見</string>
+    <string name="label_cursor_position">游標位置</string>
+    <string name="cursor_hidden">隱藏</string>
+    <string name="cursor_pos_format">(%1$.3f, %2$.3f)</string>
+    <string name="label_last_message">最新訊息</string>
+    <string name="common_none">無</string>
+    <string name="no_active_connection">目前沒有連線。</string>
+    <string name="connect_instruction">請透過 Wi-Fi 或 USB 從 macOS 或其他用戶端連線 OpenDisplay 發送端。</string>
+
+    <string name="waiting_for_stream">正在等候 OpenDisplay 發送端視訊串流…</string>
+    <string name="server_stopped_hint">服務已停止。按一下「啟動服務」以開始接聽。</string>
+    <string name="btn_full_screen">全螢幕顯示</string>
+
+    <string name="hud_connected">已連線：%1$s</string>
+    <string name="default_client_name">用戶端</string>
+    <string name="hud_stats_format">解析度：%1$dx%2$d | FPS：%3$.1f | 頻寬：%4$.2f Mbps | 延遲：%5$s</string>
+    <string name="btn_exit_full_screen">結束全螢幕</string>
+    <string name="hud_hint">按返回鍵或輕觸螢幕切換浮層</string>
+
+    <string name="btn_language">語言</string>
+    <string name="language_dialog_title">選擇語言</string>
+    <string name="language_system_default">跟隨系統</string>
+    <string name="dialog_close">關閉</string>
+</resources>

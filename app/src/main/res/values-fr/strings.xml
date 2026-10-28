@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenDisplay</string>
+    <string name="app_header_title">Récepteur OpenDisplay</string>
+    <string name="protocol_version">Version du protocole %1$d (pv=%2$d)</string>
+
+    <string name="start_server">DÉMARRER SERVEUR</string>
+    <string name="stop_server">ARRÊTER SERVEUR</string>
+
+    <string name="status_connected">CONNECTÉ : %1$s</string>
+    <string name="status_listening">À L\'ÉCOUTE SUR LE PORT %1$d</string>
+    <string name="status_stopped">SERVEUR ARRÊTÉ</string>
+
+    <string name="display_resolution_mode">Mode de résolution d\'affichage</string>
+    <string name="target_resolution_format">Cible : %1$d x %2$d</string>
+    <string name="resolution_mode_auto">Auto (Natif/Max)</string>
+    <string name="resolution_mode_fhd">1080p (1920x1080)</string>
+    <string name="resolution_mode_qhd">1440p (2560x1440)</string>
+    <string name="resolution_mode_uhd_4k">4K UHD (3840x2160)</string>
+
+    <string name="server_details">Détails du serveur</string>
+    <string name="label_status">État</string>
+    <string name="status_running">En cours</string>
+    <string name="status_stopped_text">Arrêté</string>
+    <string name="label_target_resolution">Résolution cible</string>
+    <string name="label_resolution_mode">Mode de résolution</string>
+    <string name="label_listening_port">Port d\'écoute</string>
+    <string name="port_format_tcp">TCP %1$d</string>
+    <string name="label_udp_cursor_port">Port UDP du curseur</string>
+    <string name="port_format_udp">UDP %1$d</string>
+    <string name="udp_port_disabled">Désactivé</string>
+    <string name="label_local_ips">IP(s) locale(s)</string>
+    <string name="ip_offline">Aucune / Hors ligne</string>
+    <string name="label_device_name">Nom de l\'appareil</string>
+    <string name="label_mdns_service">Service mDNS</string>
+    <string name="label_mdns_registered">mDNS enregistré</string>
+    <string name="common_yes">Oui</string>
+    <string name="common_no">Non</string>
+    <string name="label_device_id">Identifiant appareil (UUID)</string>
+    <string name="error_prefix">Erreur : %1$s</string>
+
+    <string name="client_session">Session du client</string>
+    <string name="label_client_address">Adresse du client</string>
+    <string name="label_sender_pv">PV de l\'émetteur</string>
+    <string name="label_sender_min_pv">PV min de l\'émetteur</string>
+    <string name="common_unknown">Inconnu</string>
+    <string name="label_rtt_latency">Latence RTT</string>
+    <string name="label_clock_offset">Décalage d\'horloge</string>
+    <string name="latency_measuring">Mesure en cours…</string>
+    <string name="latency_ms_format">%1$d ms</string>
+    <string name="label_video_frames">Trames vidéo</string>
+    <string name="label_control_messages">Messages de contrôle</string>
+    <string name="label_fps">FPS</string>
+    <string name="label_bandwidth">Bande passante</string>
+    <string name="bandwidth_mbps_format">%.2f Mbps</string>
+    <string name="label_cursor_channel">Canal du curseur</string>
+    <string name="cursor_channel_udp">UDP (Canal secondaire)</string>
+    <string name="cursor_channel_tcp">TCP</string>
+    <string name="label_cursor_visible">Curseur visible</string>
+    <string name="label_cursor_position">Position du curseur</string>
+    <string name="cursor_hidden">Masqué</string>
+    <string name="cursor_pos_format">(%1$.3f, %2$.3f)</string>
+    <string name="label_last_message">Dernier message</string>
+    <string name="common_none">Aucun</string>
+    <string name="no_active_connection">Aucune connexion active.</string>
+    <string name="connect_instruction">Connectez un émetteur OpenDisplay depuis macOS ou un autre client via Wi-Fi ou USB.</string>
+
+    <string name="waiting_for_stream">En attente du flux de l\'émetteur OpenDisplay…</string>
+    <string name="server_stopped_hint">Serveur arrêté. Cliquez sur « DÉMARRER SERVEUR » pour écouter.</string>
+    <string name="btn_full_screen">PLEIN ÉCRAN</string>
+
+    <string name="hud_connected">Connecté : %1$s</string>
+    <string name="default_client_name">Client</string>
+    <string name="hud_stats_format">Résolution : %1$dx%2$d | FPS : %3$.1f | Bande passante : %4$.2f Mbps | Latence : %5$s</string>
+    <string name="btn_exit_full_screen">Quitter le plein écran</string>
+    <string name="hud_hint">Appuyez sur RETOUR ou touchez l\'écran pour afficher/masquer l\'incrustation</string>
+
+    <string name="btn_language">Langue</string>
+    <string name="language_dialog_title">Sélectionner la langue</string>
+    <string name="language_system_default">Valeur par défaut du système</string>
+    <string name="dialog_close">Fermer</string>
+</resources>

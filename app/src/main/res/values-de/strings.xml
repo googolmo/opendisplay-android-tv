@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenDisplay</string>
+    <string name="app_header_title">OpenDisplay-Empfänger</string>
+    <string name="protocol_version">Protokollversion %1$d (pv=%2$d)</string>
+
+    <string name="start_server">SERVER STARTEN</string>
+    <string name="stop_server">SERVER STOPPEN</string>
+
+    <string name="status_connected">VERBUNDEN: %1$s</string>
+    <string name="status_listening">LAUSCHT AUF PORT %1$d</string>
+    <string name="status_stopped">SERVER GESTOPPT</string>
+
+    <string name="display_resolution_mode">Anzeigeauflösungsmodus</string>
+    <string name="target_resolution_format">Ziel: %1$d x %2$d</string>
+    <string name="resolution_mode_auto">Automatisch (Nativ/Max)</string>
+    <string name="resolution_mode_fhd">1080p (1920x1080)</string>
+    <string name="resolution_mode_qhd">1440p (2560x1440)</string>
+    <string name="resolution_mode_uhd_4k">4K UHD (3840x2160)</string>
+
+    <string name="server_details">Serverdetails</string>
+    <string name="label_status">Status</string>
+    <string name="status_running">Läuft</string>
+    <string name="status_stopped_text">Gestoppt</string>
+    <string name="label_target_resolution">Zielauflösung</string>
+    <string name="label_resolution_mode">Auflösungsmodus</string>
+    <string name="label_listening_port">Abhör-Port</string>
+    <string name="port_format_tcp">TCP %1$d</string>
+    <string name="label_udp_cursor_port">UDP-Cursor-Port</string>
+    <string name="port_format_udp">UDP %1$d</string>
+    <string name="udp_port_disabled">Deaktiviert</string>
+    <string name="label_local_ips">Lokale IP(s)</string>
+    <string name="ip_offline">Keine / Offline</string>
+    <string name="label_device_name">Gerätename</string>
+    <string name="label_mdns_service">mDNS-Dienst</string>
+    <string name="label_mdns_registered">mDNS registriert</string>
+    <string name="common_yes">Ja</string>
+    <string name="common_no">Nein</string>
+    <string name="label_device_id">Geräte-ID (UUID)</string>
+    <string name="error_prefix">Fehler: %1$s</string>
+
+    <string name="client_session">Client-Sitzung</string>
+    <string name="label_client_address">Client-Adresse</string>
+    <string name="label_sender_pv">Sender-PV</string>
+    <string name="label_sender_min_pv">Sender Min-PV</string>
+    <string name="common_unknown">Unbekannt</string>
+    <string name="label_rtt_latency">RTT-Latenz</string>
+    <string name="label_clock_offset">Uhrenabweichung</string>
+    <string name="latency_measuring">Messung läuft…</string>
+    <string name="latency_ms_format">%1$d ms</string>
+    <string name="label_video_frames">Video-Frames</string>
+    <string name="label_control_messages">Steuerungsnachrichten</string>
+    <string name="label_fps">FPS</string>
+    <string name="label_bandwidth">Bandbreite</string>
+    <string name="bandwidth_mbps_format">%.2f Mbps</string>
+    <string name="label_cursor_channel">Cursor-Kanal</string>
+    <string name="cursor_channel_udp">UDP (Seitenkanal)</string>
+    <string name="cursor_channel_tcp">TCP</string>
+    <string name="label_cursor_visible">Cursor sichtbar</string>
+    <string name="label_cursor_position">Cursor-Position</string>
+    <string name="cursor_hidden">Ausgeblendet</string>
+    <string name="cursor_pos_format">(%1$.3f, %2$.3f)</string>
+    <string name="label_last_message">Letzte Nachricht</string>
+    <string name="common_none">Keine</string>
+    <string name="no_active_connection">Keine aktive Verbindung.</string>
+    <string name="connect_instruction">Verbinden Sie einen OpenDisplay-Sender von macOS oder einem anderen Client über WLAN oder USB.</string>
+
+    <string name="waiting_for_stream">Warte auf OpenDisplay-Sender-Stream…</string>
+    <string name="server_stopped_hint">Server gestoppt. Klicken Sie auf „SERVER STARTEN“, um zu lauschen.</string>
+    <string name="btn_full_screen">VOLLBILD</string>
+
+    <string name="hud_connected">Verbunden: %1$s</string>
+    <string name="default_client_name">Client</string>
+    <string name="hud_stats_format">Auflösung: %1$dx%2$d | FPS: %3$.1f | Bandbreite: %4$.2f Mbps | Latenz: %5$s</string>
+    <string name="btn_exit_full_screen">Vollbild beenden</string>
+    <string name="hud_hint">Drücken Sie ZURÜCK oder tippen Sie auf den Bildschirm, um das Overlay umzuschalten</string>
+
+    <string name="btn_language">Sprache</string>
+    <string name="language_dialog_title">Sprache auswählen</string>
+    <string name="language_system_default">Systemstandard</string>
+    <string name="dialog_close">Schließen</string>
+</resources>

@@ -6,9 +6,10 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,12 +32,14 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -49,7 +52,33 @@ import im.amomo.opendisplay.ui.theme.OpenDisplayAndroidTvTheme
 import kotlinx.coroutines.delay
 import java.util.Locale
 
-class MainActivity : ComponentActivity() {
+fun ResolutionMode.getTitleResId(): Int = when (this) {
+    ResolutionMode.AUTO -> R.string.resolution_mode_auto
+    ResolutionMode.FHD -> R.string.resolution_mode_fhd
+    ResolutionMode.QHD -> R.string.resolution_mode_qhd
+    ResolutionMode.UHD_4K -> R.string.resolution_mode_uhd_4k
+}
+
+data class SupportedLanguage(
+    val code: String,
+    val displayNameRes: Int? = null,
+    val nativeName: String
+)
+
+val SupportedLanguages = listOf(
+    SupportedLanguage("", R.string.language_system_default, "System Default"),
+    SupportedLanguage("en", null, "English"),
+    SupportedLanguage("zh-CN", null, "简体中文"),
+    SupportedLanguage("zh-TW", null, "繁體中文"),
+    SupportedLanguage("ja", null, "日本語"),
+    SupportedLanguage("ko", null, "한국어"),
+    SupportedLanguage("de", null, "Deutsch"),
+    SupportedLanguage("es", null, "Español"),
+    SupportedLanguage("pt", null, "Português"),
+    SupportedLanguage("fr", null, "Français")
+)
+
+class MainActivity : AppCompatActivity() {
 
     private lateinit var server: OpenDisplayServer
 
@@ -201,7 +230,8 @@ fun FullScreenVideoView(
                             format: Int,
                             width: Int,
                             height: Int
-                        ) {}
+                        ) {
+                        }
 
                         override fun surfaceDestroyed(holder: SurfaceHolder) {
                             onSetSurface(null)
@@ -246,22 +276,24 @@ fun FullScreenVideoView(
                 ) {
                     val client = serverState.connectedClient
                     Column {
+                        val clientName = client?.clientAddress ?: stringResource(R.string.default_client_name)
                         Text(
-                            text = "Connected: ${client?.clientAddress ?: "Client"}",
+                            text = stringResource(R.string.hud_connected, clientName),
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
                         client?.let {
+                            val latencyStr = it.rttMs?.let { rtt -> stringResource(R.string.latency_ms_format, rtt) }
+                                ?: stringResource(R.string.latency_measuring)
                             Text(
-                                text = String.format(
-                                    Locale.US,
-                                    "Resolution: %dx%d | FPS: %.1f | Bandwidth: %.2f Mbps | Latency: %s",
+                                text = stringResource(
+                                    R.string.hud_stats_format,
                                     serverState.currentResolution.first,
                                     serverState.currentResolution.second,
                                     it.fps,
                                     it.mbps,
-                                    it.rttMs?.let { rtt -> "$rtt ms" } ?: "Measuring..."
+                                    latencyStr
                                 ),
                                 color = Color.LightGray,
                                 fontSize = 12.sp,
@@ -277,13 +309,13 @@ fun FullScreenVideoView(
                             contentColor = Color.White
                         )
                     ) {
-                        Text(text = "Exit Full Screen", fontSize = 14.sp)
+                        Text(text = stringResource(R.string.btn_exit_full_screen), fontSize = 14.sp)
                     }
                 }
 
                 // Bottom Hint
                 Text(
-                    text = "Press BACK or tap screen to toggle overlay",
+                    text = stringResource(R.string.hud_hint),
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp,
                     modifier = Modifier
@@ -309,87 +341,235 @@ fun DashboardScreen(
     onSetResolutionMode: (ResolutionMode) -> Unit = {},
     onEnterFullScreen: () -> Unit = {}
 ) {
-    Column(
+    var showLanguageDialog by remember { mutableStateOf(false) }
+
+    if (showLanguageDialog) {
+        BackHandler {
+            showLanguageDialog = false
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // App Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.app_header_title),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(R.string.protocol_version, 3, 3),
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Language Switcher Button
+                    Button(
+                        onClick = { showLanguageDialog = true },
+                        colors = ButtonDefaults.colors(
+                            containerColor = Color.White.copy(alpha = 0.15f),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = "🌐 " + stringResource(R.string.btn_language),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    // Start / Stop Button
+                    Button(
+                        onClick = {
+                            if (serverState.isListening) {
+                                onStopServer()
+                            } else {
+                                onStartServer()
+                            }
+                        },
+                        colors = ButtonDefaults.colors(
+                            containerColor = if (serverState.isListening) Color(0xFFD32F2F) else Color(0xFF2E7D32),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (serverState.isListening) R.string.stop_server else R.string.start_server
+                            ),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+            }
+
+            // Status Banner
+            StatusBanner(state = serverState)
+
+            // Resolution Selector Card
+            ResolutionSelectorCard(
+                currentMode = serverState.resolutionMode,
+                currentResolution = serverState.currentResolution,
+                onSetResolutionMode = onSetResolutionMode
+            )
+
+            // Main Content Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Server Info Card
+                Column(modifier = Modifier.weight(1f)) {
+                    ServerInfoCard(state = serverState)
+                }
+
+                // Client Info Card
+                Column(modifier = Modifier.weight(1f)) {
+                    ClientInfoCard(clientState = serverState.connectedClient)
+                }
+            }
+
+            // Video Surface Display Section
+            VideoSurfaceCard(
+                isListening = serverState.isListening,
+                clientState = serverState.connectedClient,
+                onSetSurface = onSetSurface,
+                onEnterFullScreen = onEnterFullScreen
+            )
+        }
+
+        // In-app Language Selection Dialog Overlay
+        if (showLanguageDialog) {
+            LanguageSelectionDialog(
+                onDismissRequest = { showLanguageDialog = false },
+                onLanguageSelected = { langCode ->
+                    val locales = if (langCode.isEmpty()) {
+                        LocaleListCompat.getEmptyLocaleList()
+                    } else {
+                        LocaleListCompat.forLanguageTags(langCode)
+                    }
+                    AppCompatDelegate.setApplicationLocales(locales)
+                    showLanguageDialog = false
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun LanguageSelectionDialog(
+    onDismissRequest: () -> Unit,
+    onLanguageSelected: (String) -> Unit
+) {
+    val currentLocales = AppCompatDelegate.getApplicationLocales()
+    val activeTags = if (currentLocales.isEmpty) "" else currentLocales.toLanguageTags()
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(Color.Black.copy(alpha = 0.75f))
+            .clickable(onClick = onDismissRequest),
+        contentAlignment = Alignment.Center
     ) {
-        // App Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            modifier = Modifier
+                .width(440.dp)
+                .heightIn(max = 560.dp)
+                .clickable(enabled = false) {},
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Column {
-                Text(
-                    text = "OpenDisplay Receiver",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Protocol Version 3 (pv=3)",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-            }
-
-            // Start / Stop Button
-            Button(
-                onClick = {
-                    if (serverState.isListening) {
-                        onStopServer()
-                    } else {
-                        onStartServer()
-                    }
-                },
-                colors = ButtonDefaults.colors(
-                    containerColor = if (serverState.isListening) Color(0xFFD32F2F) else Color(0xFF2E7D32),
-                    contentColor = Color.White
-                )
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = if (serverState.isListening) "STOP SERVER" else "START SERVER",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    text = stringResource(R.string.language_dialog_title),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
                 )
+
+                SupportedLanguages.forEach { lang ->
+                    val isSelected = when {
+                        lang.code.isEmpty() -> activeTags.isEmpty()
+                        lang.code.equals("zh-TW", ignoreCase = true) ->
+                            activeTags.contains("zh-TW", ignoreCase = true) ||
+                                    activeTags.contains("zh-Hant", ignoreCase = true) ||
+                                    activeTags.contains("zh-HK", ignoreCase = true)
+
+                        lang.code.equals("zh-CN", ignoreCase = true) ->
+                            (activeTags.startsWith("zh", ignoreCase = true) &&
+                                    !activeTags.contains("TW", ignoreCase = true) &&
+                                    !activeTags.contains("Hant", ignoreCase = true) &&
+                                    !activeTags.contains("HK", ignoreCase = true))
+
+                        else -> activeTags.startsWith(lang.code, ignoreCase = true)
+                    }
+
+                    val title = if (lang.displayNameRes != null) {
+                        stringResource(lang.displayNameRes)
+                    } else {
+                        lang.nativeName
+                    }
+
+                    Button(
+                        onClick = { onLanguageSelected(lang.code) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.colors(
+                            containerColor = if (isSelected) Color(0xFF1565C0) else Color.White.copy(alpha = 0.12f),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = title,
+                                fontSize = 14.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                            if (isSelected) {
+                                Text(text = "✓", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Button(
+                    onClick = onDismissRequest,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.colors(
+                        containerColor = Color.White.copy(alpha = 0.08f),
+                        contentColor = Color.LightGray
+                    )
+                ) {
+                    Text(text = stringResource(R.string.dialog_close), fontSize = 14.sp)
+                }
             }
         }
-
-        // Status Banner
-        StatusBanner(state = serverState)
-
-        // Resolution Selector Card
-        ResolutionSelectorCard(
-            currentMode = serverState.resolutionMode,
-            currentResolution = serverState.currentResolution,
-            onSetResolutionMode = onSetResolutionMode
-        )
-
-        // Main Content Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Server Info Card
-            Column(modifier = Modifier.weight(1f)) {
-                ServerInfoCard(state = serverState)
-            }
-
-            // Client Info Card
-            Column(modifier = Modifier.weight(1f)) {
-                ClientInfoCard(clientState = serverState.connectedClient)
-            }
-        }
-
-        // Video Surface Display Section
-        VideoSurfaceCard(
-            isListening = serverState.isListening,
-            clientState = serverState.connectedClient,
-            onSetSurface = onSetSurface,
-            onEnterFullScreen = onEnterFullScreen
-        )
     }
 }
 
@@ -414,12 +594,16 @@ fun ResolutionSelectorCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Display Resolution Mode",
+                    text = stringResource(R.string.display_resolution_mode),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Target: ${currentResolution.first} x ${currentResolution.second}",
+                    text = stringResource(
+                        R.string.target_resolution_format,
+                        currentResolution.first,
+                        currentResolution.second
+                    ),
                     fontSize = 13.sp,
                     color = Color.Gray,
                     fontFamily = FontFamily.Monospace
@@ -441,7 +625,7 @@ fun ResolutionSelectorCard(
                         )
                     ) {
                         Text(
-                            text = mode.displayName,
+                            text = stringResource(mode.getTitleResId()),
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
@@ -454,10 +638,15 @@ fun ResolutionSelectorCard(
 
 @Composable
 fun StatusBanner(state: ServerState) {
-    val (bgColor, statusText) = when {
-        state.connectedClient != null -> Color(0xFF1565C0) to "CONNECTED: ${state.connectedClient.clientAddress}"
-        state.isListening -> Color(0xFF2E7D32) to "LISTENING ON PORT ${state.port}"
-        else -> Color(0xFF424242) to "SERVER STOPPED"
+    val bgColor = when {
+        state.connectedClient != null -> Color(0xFF1565C0)
+        state.isListening -> Color(0xFF2E7D32)
+        else -> Color(0xFF424242)
+    }
+    val statusText = when {
+        state.connectedClient != null -> stringResource(R.string.status_connected, state.connectedClient.clientAddress)
+        state.isListening -> stringResource(R.string.status_listening, state.port)
+        else -> stringResource(R.string.status_stopped)
     }
 
     Box(
@@ -497,29 +686,50 @@ fun ServerInfoCard(state: ServerState) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Server Details",
+                text = stringResource(R.string.server_details),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
 
-            InfoRow("Status", if (state.isListening) "Running" else "Stopped")
-            InfoRow("Target Resolution", "${state.currentResolution.first}x${state.currentResolution.second}")
-            InfoRow("Resolution Mode", state.resolutionMode.displayName)
-            InfoRow("Listening Port", "TCP ${state.port}")
-            InfoRow("UDP Cursor Port", if (state.cursorPort != null) "UDP ${state.cursorPort}" else "Disabled")
             InfoRow(
-                "Local IP(s)",
-                if (state.localIpAddresses.isNotEmpty()) state.localIpAddresses.joinToString(", ") else "None / Offline"
+                stringResource(R.string.label_status),
+                if (state.isListening) stringResource(R.string.status_running) else stringResource(R.string.status_stopped_text)
             )
-            InfoRow("Device Name", state.deviceName)
-            InfoRow("mDNS Service", "_opensidecar._tcp")
-            InfoRow("mDNS Registered", if (state.mDnsRegistered) "Yes" else "No")
-            InfoRow("Device ID (UUID)", state.deviceId)
+            InfoRow(
+                stringResource(R.string.label_target_resolution),
+                "${state.currentResolution.first}x${state.currentResolution.second}"
+            )
+            InfoRow(
+                stringResource(R.string.label_resolution_mode),
+                stringResource(state.resolutionMode.getTitleResId())
+            )
+            InfoRow(
+                stringResource(R.string.label_listening_port),
+                stringResource(R.string.port_format_tcp, state.port)
+            )
+            InfoRow(
+                stringResource(R.string.label_udp_cursor_port),
+                if (state.cursorPort != null) stringResource(
+                    R.string.port_format_udp,
+                    state.cursorPort
+                ) else stringResource(R.string.udp_port_disabled)
+            )
+            InfoRow(
+                stringResource(R.string.label_local_ips),
+                if (state.localIpAddresses.isNotEmpty()) state.localIpAddresses.joinToString(", ") else stringResource(R.string.ip_offline)
+            )
+            InfoRow(stringResource(R.string.label_device_name), state.deviceName)
+            InfoRow(stringResource(R.string.label_mdns_service), "_opensidecar._tcp")
+            InfoRow(
+                stringResource(R.string.label_mdns_registered),
+                if (state.mDnsRegistered) stringResource(R.string.common_yes) else stringResource(R.string.common_no)
+            )
+            InfoRow(stringResource(R.string.label_device_id), state.deviceId)
 
             state.lastError?.let { err ->
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Error: $err",
+                    text = stringResource(R.string.error_prefix, err),
                     color = Color.Red,
                     fontSize = 12.sp
                 )
@@ -540,38 +750,64 @@ fun ClientInfoCard(clientState: ClientState?) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Client Session",
+                text = stringResource(R.string.client_session),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
 
             if (clientState != null) {
-                InfoRow("Client Address", clientState.clientAddress)
-                InfoRow("Sender PV", "${clientState.senderPv ?: "Unknown"}")
-                InfoRow("Sender Min PV", "${clientState.senderMinPv ?: "Unknown"}")
-                InfoRow("RTT Latency", clientState.rttMs?.let { "$it ms" } ?: "Measuring...")
-                InfoRow("Clock Offset", clientState.clockOffsetMs?.let { "$it ms" } ?: "Measuring...")
-                InfoRow("Video Frames", "${clientState.videoFramesReceived}")
-                InfoRow("Control Messages", "${clientState.controlMessagesReceived}")
-                InfoRow("FPS", String.format(Locale.US, "%.1f", clientState.fps))
-                InfoRow("Bandwidth", String.format(Locale.US, "%.2f Mbps", clientState.mbps))
-                InfoRow("Cursor Channel", if (clientState.udpCursorActive) "UDP (Side Channel)" else "TCP")
-                InfoRow("Cursor Visible", if (clientState.cursorVisible) "Yes" else "No")
+                InfoRow(stringResource(R.string.label_client_address), clientState.clientAddress)
                 InfoRow(
-                    "Cursor Position",
-                    clientState.lastCursorPos?.let {
-                        String.format(Locale.US, "(%.3f, %.3f)", it.first, it.second)
-                    } ?: "Hidden"
+                    stringResource(R.string.label_sender_pv),
+                    clientState.senderPv?.toString() ?: stringResource(R.string.common_unknown)
                 )
-                InfoRow("Last Message", clientState.lastMessageType ?: "None")
+                InfoRow(
+                    stringResource(R.string.label_sender_min_pv),
+                    clientState.senderMinPv?.toString() ?: stringResource(R.string.common_unknown)
+                )
+                InfoRow(
+                    stringResource(R.string.label_rtt_latency),
+                    clientState.rttMs?.let { stringResource(R.string.latency_ms_format, it) }
+                        ?: stringResource(R.string.latency_measuring)
+                )
+                InfoRow(
+                    stringResource(R.string.label_clock_offset),
+                    clientState.clockOffsetMs?.let { stringResource(R.string.latency_ms_format, it) }
+                        ?: stringResource(R.string.latency_measuring)
+                )
+                InfoRow(stringResource(R.string.label_video_frames), "${clientState.videoFramesReceived}")
+                InfoRow(stringResource(R.string.label_control_messages), "${clientState.controlMessagesReceived}")
+                InfoRow(stringResource(R.string.label_fps), String.format(Locale.US, "%.1f", clientState.fps))
+                InfoRow(
+                    stringResource(R.string.label_bandwidth),
+                    String.format(Locale.US, "%.2f Mbps", clientState.mbps)
+                )
+                InfoRow(
+                    stringResource(R.string.label_cursor_channel),
+                    if (clientState.udpCursorActive) stringResource(R.string.cursor_channel_udp) else stringResource(R.string.cursor_channel_tcp)
+                )
+                InfoRow(
+                    stringResource(R.string.label_cursor_visible),
+                    if (clientState.cursorVisible) stringResource(R.string.common_yes) else stringResource(R.string.common_no)
+                )
+                InfoRow(
+                    stringResource(R.string.label_cursor_position),
+                    clientState.lastCursorPos?.let {
+                        stringResource(R.string.cursor_pos_format, it.first, it.second)
+                    } ?: stringResource(R.string.cursor_hidden)
+                )
+                InfoRow(
+                    stringResource(R.string.label_last_message),
+                    clientState.lastMessageType ?: stringResource(R.string.common_none)
+                )
             } else {
                 Text(
-                    text = "No active connection.",
+                    text = stringResource(R.string.no_active_connection),
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
                 Text(
-                    text = "Connect an OpenDisplay sender from macOS or another client over WiFi or USB.",
+                    text = stringResource(R.string.connect_instruction),
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -613,7 +849,8 @@ fun VideoSurfaceCard(
                                     format: Int,
                                     width: Int,
                                     height: Int
-                                ) {}
+                                ) {
+                                }
 
                                 override fun surfaceDestroyed(holder: SurfaceHolder) {
                                     onSetSurface(null)
@@ -639,7 +876,7 @@ fun VideoSurfaceCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Waiting for OpenDisplay sender stream...",
+                            text = stringResource(R.string.waiting_for_stream),
                             color = Color.White,
                             fontSize = 16.sp
                         )
@@ -658,7 +895,11 @@ fun VideoSurfaceCard(
                                 contentColor = Color.White
                             )
                         ) {
-                            Text("FULL SCREEN", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(R.string.btn_full_screen),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -670,7 +911,7 @@ fun VideoSurfaceCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Server stopped. Click 'START SERVER' to listen.",
+                        text = stringResource(R.string.server_stopped_hint),
                         color = Color.LightGray,
                         fontSize = 16.sp
                     )
